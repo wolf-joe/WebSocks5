@@ -1,14 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"github.com/armon/go-socks5"
+	"github.com/mccutchen/go-httpbin/httpbin"
 	"golang.org/x/net/websocket"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
-var listen, token string
+var cfgPath, listen, path, token, tls, certFile, keyFile string
 var socks, _ = socks5.New(&socks5.Config{})
 
 func isValidToken(ws *websocket.Conn) (bool, string) {
@@ -31,13 +35,34 @@ func ws2socks(ws *websocket.Conn) {
 
 func main() {
 	parseArgs()
-	log.Printf("listen: %s, token: %s.", listen, token)
-	http.Handle("/", websocket.Handler(ws2socks))
-	log.Fatal(http.ListenAndServe(listen, nil))
+	initConfig()
+	http.Handle(path, websocket.Handler(ws2socks))
+	if path != "/" {
+		http.Handle("/", httpbin.New().Handler())
+	}
+	if strings.ToLower(tls) == "true" {
+		log.Printf("listen: wss://%s%s, token: %s.", listen, path, token)
+		log.Fatalln(http.ListenAndServeTLS(listen, certFile, keyFile, nil))
+	} else {
+		log.Printf("listen: ws://%s%s, token: %s.\n", listen, path, token)
+		log.Fatalln(http.ListenAndServe(listen, nil))
+	}
 }
 
 func parseArgs() {
-	flag.StringVar(&listen, "listen", "127.0.0.1:5000", "WebSocks5 server listen address.")
-	flag.StringVar(&token, "token", "HelloWorld", "WebSocks5 server token (password).")
+	flag.StringVar(&cfgPath, "config", "server.json", "Config File Path")
 	flag.Parse()
+}
+
+func initConfig() {
+	content, err := ioutil.ReadFile(cfgPath)
+	if err != nil {
+		log.Fatalln("read config file error:", err)
+	}
+	var config map[string]string
+	if err = json.Unmarshal(content, &config); err != nil {
+		log.Fatalln("unmarshal json error:", err)
+	}
+	listen, path, token = config["listen"], config["path"], config["token"]
+	tls, certFile, keyFile = config["tls"], config["certFile"], config["keyFile"]
 }
