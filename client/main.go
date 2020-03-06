@@ -48,7 +48,9 @@ func main() {
 
 	for {
 		conn, _ := listener.Accept()
-		go socks2ws(conn.(*net.TCPConn))
+		if conn != nil {
+			go socks2ws(conn.(*net.TCPConn))
+		}
 	}
 }
 func parseArgs() {
