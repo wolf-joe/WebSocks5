@@ -17,18 +17,17 @@ var cfgPath, listen, url, token, certFile string
 var wsConfig *websocket.Config
 
 func socks2ws(socks *net.TCPConn) {
-	defer socks.Close()
 	ws, err := websocket.DialConfig(wsConfig)
 	if err != nil {
+		_ = socks.Close()
 		log.Println("dial ws error:", err)
 		return
 	}
-	defer ws.Close()
 
 	var wg sync.WaitGroup
 	ioCopy := func(dst io.Writer, src io.Reader) {
-		defer wg.Done()
-		io.Copy(dst, src)
+		defer func() { _, _, _ = wg.Done, socks.Close(), ws.Close() }()
+		_, _ = io.Copy(dst, src)
 	}
 	wg.Add(2)
 	go ioCopy(ws, socks)
