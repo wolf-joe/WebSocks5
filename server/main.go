@@ -21,14 +21,18 @@ func isValidToken(ws *websocket.Conn) (bool, string) {
 }
 
 func ws2socks(ws *websocket.Conn) {
-	defer ws.Close()
+	log.Printf("[INFO] receive ws: %p\n", ws)
+	defer func() {
+		log.Printf("[INFO] close ws: %p\n", ws)
+		_ = ws.Close()
+	}()
 	if ok, token := isValidToken(ws); !ok {
-		log.Println("incorrect token:", token)
+		log.Println("[WARNING] incorrect token:", token)
 		return
 	}
 	err := socks.ServeConn(ws)
 	if err != nil {
-		log.Println("socks5 serve error:", err)
+		//log.Println("[ERROR] socks5 serve error:", err)
 		return
 	}
 }
