@@ -26,7 +26,7 @@ func socks2ws(socks *net.TCPConn) {
 
 	var wg sync.WaitGroup
 	ioCopy := func(dst io.Writer, src io.Reader) {
-		defer func() { _, _, _ = wg.Done, socks.Close(), ws.Close() }()
+		defer func() { _, _ = socks.Close(), ws.Close(); wg.Done() }()
 		_, _ = io.Copy(dst, src)
 	}
 	wg.Add(2)
