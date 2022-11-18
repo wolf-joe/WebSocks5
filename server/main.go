@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"github.com/armon/go-socks5"
-	"github.com/mccutchen/go-httpbin/httpbin"
+	"github.com/mccutchen/go-httpbin/v2/httpbin"
 	"golang.org/x/net/websocket"
 	"io/ioutil"
 	"log"
