@@ -70,14 +70,22 @@ func initConfig() {
 	// generate websocket config
 	wsConfig, _ = websocket.NewConfig(url, url)
 	// load certificate file
-	content, err = ioutil.ReadFile(certFile)
-	if err != nil {
-		log.Fatalln("read cert file error:", err)
+	if certFile != "" {
+		content, err = ioutil.ReadFile(certFile)
+		if err != nil {
+			log.Fatalln("read cert file error:", err)
+		}
+		roots := x509.NewCertPool()
+		if ok := roots.AppendCertsFromPEM(content); ok != true {
+			log.Fatalln("append cert fail")
+		}
+		wsConfig.TlsConfig = &tls.Config{RootCAs: roots}
+	} else {
+		rootCAs, err := x509.SystemCertPool()
+		if err != nil {
+			log.Fatalf("local system cert failed: %+v", err)
+		}
+		wsConfig.TlsConfig = &tls.Config{RootCAs: rootCAs}
 	}
-	roots := x509.NewCertPool()
-	if ok := roots.AppendCertsFromPEM(content); ok != true {
-		log.Fatalln("append cert fail")
-	}
-	wsConfig.TlsConfig = &tls.Config{RootCAs: roots}
 	wsConfig.Header.Set("token", token)
 }
